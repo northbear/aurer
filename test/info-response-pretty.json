@@ -1,0 +1,63 @@
+{
+  "version": 5,
+  "type": "multiinfo",
+  "resultcount": 1,
+  "results": [
+    {
+      "ID": 939483,
+      "Name": "zoom",
+      "PackageBaseID": 97673,
+      "PackageBase": "zoom",
+      "Version": "5.7.4-1",
+      "Description": "Video Conferencing and Web Conferencing Service",
+      "URL": "https://zoom.us/",
+      "NumVotes": 445,
+      "Popularity": 15.030917,
+      "OutOfDate": null,
+      "Maintainer": "edh",
+      "FirstSubmitted": 1439644694,
+      "LastModified": 1627307395,
+      "URLPath": "/cgit/aur.git/snapshot/zoom.tar.gz",
+      "Depends": [
+        "fontconfig",
+        "glib2",
+        "libpulse",
+        "libsm",
+        "ttf-font",
+        "libx11",
+        "libxtst",
+        "libxcb",
+        "libxcomposite",
+        "libxfixes",
+        "libxi",
+        "libxcursor",
+        "libxkbcommon-x11",
+        "libxrandr",
+        "libxrender",
+        "libxshmfence",
+        "libxslt",
+        "mesa",
+        "nss",
+        "xcb-util-image",
+        "xcb-util-keysyms",
+        "dbus",
+        "ibus"
+      ],
+      "OptDepends": [
+        "pulseaudio-alsa",
+        "qt5-webengine",
+        "picom",
+        "xcompmgr"
+      ],
+      "License": [
+        "custom"
+      ],
+      "Keywords": [
+        "call",
+        "conference",
+        "meeting",
+        "video"
+      ]
+    }
+  ]
+}
