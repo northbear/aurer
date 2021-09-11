@@ -1,0 +1,16 @@
+{
+  "ID": 219777,
+  "Name": "gnome-shell-mousewheel-zoom",
+  "PackageBaseID": 97008,
+  "PackageBase": "gnome-shell-mousewheel-zoom",
+  "Version": "0.8.0-1",
+  "Description": "Enable mousewheel zoom using left-alt key using gnome-shell",
+  "URL": "https://github.com/tobiasquinn/gnome-shell-mousewheel-zoom",
+  "NumVotes": 2,
+  "Popularity": 0.002402,
+  "OutOfDate": null,
+  "Maintainer": "tobiasquinn",
+  "FirstSubmitted": 1439167238,
+  "LastModified": 1439167382,
+  "URLPath": "/cgit/aur.git/snapshot/gnome-shell-mousewheel-zoom.tar.gz"
+}
