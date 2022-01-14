@@ -1,15 +1,15 @@
 package aurweb_rpc
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 )
 
-/* 
-Documentation: 
+/*
+Documentation:
     https://aur.archlinux.org/rpc/
     https://wiki.archlinux.org/title/Aurweb_RPC_interface
 
@@ -78,12 +78,12 @@ For the ReturnType search, ReturnData may contain the following fields:
     }]
  }
 
-Response 
+Response
 
 {"version":5,"type":ReturnType,"resultcount":0,"results":ReturnData}
 	// search_query := "https://aur.archlinux.org/rpc/?v=5&type=search&arg=%s"
 
-Search By: 
+Search By:
     name (search by package name only)
     name-desc (search by package name and description)
     maintainer (search by package maintainer)
@@ -93,48 +93,50 @@ Search By:
     checkdepends (search for packages that checkdepend on keywords)
 */
 
-
-var
-  AUR_URL string = "https://aur.archlinux.org/rpc/"
-
-type Package struct{
-	ID int64
-	Name string
-	PackageBaseID int64
-	PackageBase string
-	Version string
-	Description string
-	URL string
-	NumVotes int64
-	Popularity float64
-	OutOfDate int64
-	Maintainer string
+type Package struct {
+	ID             int64
+	Name           string
+	PackageBaseID  int64
+	PackageBase    string
+	Version        string
+	Description    string
+	URL            string
+	NumVotes       int64
+	Popularity     float64
+	OutOfDate      int64
+	Maintainer     string
 	FirstSubmitted int64
-	LastModified int64
-	URLPath string
+	LastModified   int64
+	URLPath        string
 
-	Depends []string
-	MakeDepends []string
-	OptDepends []string
+	Depends      []string
+	MakeDepends  []string
+	OptDepends   []string
 	CheckDepends []string
-	Conflicts []string
-	Provides []string
-	Replaces []string
-	Groups []string
-	License []string
-	Keywords []string
+	Conflicts    []string
+	Provides     []string
+	Replaces     []string
+	Groups       []string
+	License      []string
+	Keywords     []string
 }
 
-type Response struct{
-	Version int64 `json:version`
-	Type string `json:type`
-	ResultCount int64 `json:resultcount`
-	Results []Package `json:results`
+type Response struct {
+	Version     int64     `json:version`
+	Type        string    `json:type`
+	ResultCount int64     `json:resultcount`
+	Results     []Package `json:results`
 }
 
+type DataRequester func(u string, r *Response)
 
+type Config struct {
+	base_url  string
+	requester DataRequester
+	valid_by  []string
+}
 
-var ByValues []string = []string{
+var byValues []string = []string{
 	"name",
 	"name-desc",
 	"maintainer",
@@ -144,35 +146,19 @@ var ByValues []string = []string{
 	"checkdepends",
 }
 
-func ValidateBy(p string) bool {
-	for _, v := range ByValues {
-		if p == v {
-			return true
-		}
-	}
-	return false
+var config = Config{
+	base_url:  "https://aur.archlinux.org/rpc/",
+	requester: BasicRequest,
+	valid_by:  byValues,
 }
 
-func BuildSearchUrl(q, by string) (string, error) {
-	u := AUR_URL + "?v=5&type=search"
-	if by != "" {
-		if ! ValidateBy(by) {
-			return "", fmt.Errorf("Wrong value of parameter by: %s", by)
-		}
-		u += "&by=" + by
-	}
-	u += "&arg=" + url.QueryEscape(q)
-	return u, nil
+func SetRequester(r DataRequester) {
+	config.requester = r
 }
+func GetRequester() DataRequester { return config.requester }
 
-type DataRequester func(u string, r *Response)
-
-var CurrentRequester DataRequester = EmptyRequest
-
-func EmptyRequest(u string, r *Response) {}
-
-func Request(u string, r *Response) {
-	resp, err := http.Get(u)	
+func BasicRequest(u string, r *Response) {
+	resp, err := http.Get(u)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -182,7 +168,28 @@ func Request(u string, r *Response) {
 
 	log.Printf("Protocol Versions: %d; Type: %s; Amount of Objects: %d\n",
 		r.Version, r.Type, r.ResultCount)
-} 
+}
+
+func ValidateBy(p string) bool {
+	for _, v := range config.valid_by {
+		if p == v {
+			return true
+		}
+	}
+	return false
+}
+
+func BuildSearchUrl(q, by string) (string, error) {
+	u := config.base_url + "?v=5&type=search"
+	if by != "" {
+		if !ValidateBy(by) {
+			return "", fmt.Errorf("Wrong value of parameter by: %s", by)
+		}
+		u += "&by=" + by
+	}
+	u += "&arg=" + url.QueryEscape(q)
+	return u, nil
+}
 
 func GetSearch(query string, by string) (Response, error) {
 	resp := Response{}
@@ -191,8 +198,8 @@ func GetSearch(query string, by string) (Response, error) {
 		return resp, err
 	}
 
-	CurrentRequester(rq, &resp)
-	
+	config.requester(rq, &resp)
+
 	return resp, nil
 }
 
@@ -200,4 +207,3 @@ func GetInfo(plist []string) (Response, error) {
 	response := Response{}
 	return response, nil
 }
-
