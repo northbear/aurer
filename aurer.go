@@ -1,66 +1,46 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
-	"encoding/json"
 	"log"
 	"net/http"
 	"net/url"
+	aur "northbear/aurer/aurweb_rpc"
 	"os"
 )
 
-func Usage() string {
-	return "Usage: aurer <options> <pattern>|<package-name>"
-}
-
-
-type Action interface{
-	Name() string
-}
-
-type ActionSearch struct{
-	pattern string
-	by string
-}
-
-// func New(pattern, by string) *ActionSearch { return &ActionSearch{ pattern: pattern, by: by } }
-func (a ActionSearch) Name() string { return "Search" } 
-func (a ActionSearch) Pattern() string { return a.pattern }
-func (a ActionSearch) ByField() string { return a.by }
-
-type ActionGetInfo struct{
-	pkg_name string
-}
-
-// func New(pkg string) ActionGetInfo { return &ActionGetInfo{ pkg_name: pkg } }
-func (a ActionGetInfo) Name() string { return "GetInfo" }
-func (a ActionGetInfo) Pattern() string { return a.pkg_name }
-
+/*
+  search
+  info
+  download
+  build
+*/
 
 func GetAction(argv []string, cf string) (Action, error) {
-	action := ActionSearch{ pattern: "zoom" }
-	
+	action := ActionSearch{pattern: "zoom"}
+
 	return action, nil
 }
 
 // type PackageContent map[string]string
 
 type PackageDescr struct {
-	ID string
-	Name string
+	ID          string
+	Name        string
 	Description string
-	Version string
-	URL string
+	Version     string
+	URL         string
 	//	data PackageContent
 }
 
-type AurResponse struct{
-	Version int64 `json:version`
-	Type string `json:type`
-	ResultCount int64 `json:resultcount`
-	Results []PackageDescr `json:results`
-	//	Results []map[string]interface{} `json:results`	
+type AurResponse struct {
+	Version     int64          `json:version`
+	Type        string         `json:type`
+	ResultCount int64          `json:resultcount`
+	Results     []PackageDescr `json:results`
+	//	Results []map[string]interface{} `json:results`
 }
 
 func GetRequest(url string) (string, error) {
@@ -86,7 +66,7 @@ func Search(pattern string, by string) []PackageDescr {
 	q.Set("type", "search")
 	q.Set("arg", pattern)
 	u.RawQuery = q.Encode()
-	resp, err := http.Get(u.String())	
+	resp, err := http.Get(u.String())
 	// search_query := "https://aur.archlinux.org/rpc/?v=5&type=search&arg=%s"
 	// resp, err := http.Get(fmt.Sprintf(search_query, url.QueryEscape(pattern)))
 	if err != nil {
@@ -98,7 +78,7 @@ func Search(pattern string, by string) []PackageDescr {
 
 	log.Printf("Protocol Versions: %d; Type: %s; Amount of Objects: %d\n",
 		ar.Version, ar.Type, ar.ResultCount)
-	
+
 	return ar.Results
 }
 
@@ -107,56 +87,55 @@ func GetInfo(pattern string) []PackageDescr {
 	return ar.Results
 }
 
-type Config struct{
-	Args *[]string
-}
-
-func NewConfig() *Config { return &Config{} }
-func (c Config) Init(args *[]string) error {
-	return nil
-}
-
-func (c Config) GetAction() (Action, error) {
-	action := ActionSearch{ pattern: "zoom" }
-	
-	return action, nil
-}
-
-func main() {	
+func main() {
 	config := NewConfig()
-	if err := config.Init(&os.Args); err != nil {
+	if err := config.Init(os.Args); err != nil {
 		log.Fatal(err)
 	}
-	
-	action, err := GetAction(os.Args, "")
+
+	action, err := config.GetAction()
 	if err != nil {
-		fmt.Println(Usage())
-		os.Exit(0)
+		log.Fatal("Error: ", err)
 	}
-	switch action.(type) {
+
+	switch act := action.(type) {
+	case ActionUsage:
+		usage := act
+		fmt.Println(usage.message)
+		os.Exit(0)
 	case ActionSearch:
-		as := action.(ActionSearch)
-		pdl := Search(as.Pattern(), as.ByField())
-		for c, pd := range pdl {
-			fmt.Printf("Package name: %s\n", pd.Name)
-			fmt.Printf("Descr: %s\n", pd.Description)
-			fmt.Printf("Version: %s\n", pd.Version)
-			fmt.Printf("URL: %s\n", pd.URL)
-			if c + 1 < len(pdl) {
+		search := act
+		response, err := aur.GetSearch(search.Pattern(), search.ByField())
+		if err != nil {
+			log.Fatal("Search cannot get response: ", err)
+		}
+		for c, pkg := range response.Results {
+			// fmt.Printf("Package name: %s\n", pkg.Name)
+			// fmt.Printf("Descr: %s\n", pkg.Description)
+			// fmt.Printf("Version: %s\n", pkg.Version)
+			fmt.Printf("%s %s\n", pkg.Name, pkg.Version)
+			fmt.Printf("    %s\n", pkg.Description)
+			fmt.Printf("    https://aur.archlinux.org%s\n", pkg.URLPath)
+			if int64(c+1) < response.ResultCount {
 				fmt.Println("")
 			}
 		}
 		fmt.Println("+++ End +++")
 	case ActionGetInfo:
-		ai := action.(ActionGetInfo)
-		info_list := GetInfo(ai.Pattern())
-		for _, pd := range info_list {
-			fmt.Println("Name: ", pd.Name)
+		ai := act
+		response, err := aur.GetInfo(ai.Pattern())
+		if err != nil {
+			log.Fatal("GetInfo cannot get response: ", err)
+		}
+		for _, pkg := range response.Results {
+			fmt.Println("Name: ", pkg.Name)
 		}
 	}
-	
+
 	fmt.Printf("Action executed: %s\n", action.Name())
 	fmt.Printf("CLI params: %v\n", os.Args)
 	// fmt.Printf("Version: %s", aurs.GetVersion())
 	// fmt.Println("Hello, world!", cliopt.SearchPattern, "...")
 }
+
+// wget https://aur.archlinux.org/cgit/aur.git/snapshot/taisei.tar.gz -O - | tar xzC sources/
