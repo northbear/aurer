@@ -5,16 +5,16 @@ import (
 	"fmt"
 )
 
-type Params struct{
+type Params struct {
 	ForceSearch bool
-	Info string
-	Download bool
-	SearchBy string
+	Info        string
+	Download    bool
+	SearchBy    string
 }
 
 var params Params
 
-func main() {
+func main_t() {
 	flag.BoolVar(&params.ForceSearch, "a", false, "Print all matches")
 	flag.StringVar(&params.SearchBy, "by", "", "Specify field to search by")
 
